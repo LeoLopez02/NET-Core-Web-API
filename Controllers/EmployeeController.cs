@@ -8,6 +8,8 @@ using System.Data;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using WebApplication1.Models;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
 
 namespace WebApplication1.Controllers
 {
@@ -16,9 +18,11 @@ namespace WebApplication1.Controllers
     public class EmployeeController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        public EmployeeController(IConfiguration configuration)
+        private readonly IWebHostEnvironment _env;
+        public EmployeeController(IConfiguration configuration, IWebHostEnvironment env)
         {
             _configuration = configuration;
+            _env = env;
         }
 
         [HttpGet]
@@ -98,9 +102,8 @@ namespace WebApplication1.Controllers
                     myReader.Close();
                     myCon.Close();
                 }
-
-                return new JsonResult("Updated Successfully!");
             }
+            return new JsonResult("Updated Successfully!");
         }
 
         [HttpDelete("{id}")]
@@ -122,9 +125,36 @@ namespace WebApplication1.Controllers
                     myReader.Close();
                     myCon.Close();
                 }
+            }
 
-                return new JsonResult("Deleted Successfully!");
+            return new JsonResult("Deleted Successfully!");
+        }
+
+        [Route("SaveFile")]
+        [HttpPost]
+        public JsonResult SaveFile()
+        {
+            try
+            {
+                var httpRequest = Request.Form;
+                var postedFile = httpRequest.Files[0];
+                string fileName = postedFile.FileName;
+                var pysicalPath = _env.ContentRootPath + "/Photos/" + fileName;
+
+                using(var stream = new FileStream(pysicalPath, FileMode.Create))
+                {
+                    postedFile.CopyTo(stream);
+                }
+
+                return new JsonResult(fileName);
+            }
+            catch (Exception)
+            {
+
+                return new JsonResult("anonymous.png");
             }
         }
+
+        
     }
 }
